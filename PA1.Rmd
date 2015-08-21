@@ -1,0 +1,89 @@
+---
+title: "Barbell Lift Technique Analysis"
+author: "Gary Laughton"
+output: html_document
+---
+## Overview
+The objective of this analysis is to develop a model that will identify errors in form for dumbbell lifts using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.  The participants were asked to perform these lifts correctly and incorrectly in 5 different ways. The lift categories are as folllows:
+
+1. A: Exactly according to specification - correct
+2. B: Throwing elbows to the front
+3. C: Lifting dumbbell only halfway
+4. D: Lowering dumbbell only halfway
+5. E: Throwing hips to the front
+
+The model was fitted using the Weight Lifting Exercises dataset published by Velloso, Gellersen, Ugulino, and Fuks. After cleaning the data, I split the training set data into a training and validation set then tested several classification models. I chose the model that best fit the validation data. This turned out to be a Random Forest model. The model was then applied to the testing set of 20 observations to predict the error class.
+
+## Input - Read, Clean and Partition Weight Lifting Exercise Dataset
+Read training and testing data. Remove any columns not related to data from accelerometers on the belt, forearm, arm, and dumbell. Do not include subject identifier as we're trying to build a model to measure lift quality for any weightlifter. Remove any column with N/As or #DIV/0 in the training set. Also remove any columns identified as skewness, kurtosis or amplitude_yaw. These are summary data across windows and are only included in few select rows. The columns removed contain little data so they should not significantly affect model fit.
+
+Since we have a large training split it into a training and validation set so we can estimate the out of sample error. The split is 60% training and 40% validation. 
+```{r readdata, cache=TRUE}
+# Read data
+library(caret)
+library(datasets)
+pml_dat<-read.csv("pml-training.csv")
+pml_tst<-read.csv("pml-testing.csv")
+
+# Filter out N/A and DIV/0 columns
+cl<-!colSums(is.na(pml_dat))
+cl[c(1,2,3,4,5,6,7)]=FALSE
+cl<-cl & !grepl("skewness", names(pml_dat))
+cl<-cl & !grepl("kurtosis", names(pml_dat))
+cl<-cl & !grepl("amplitude_yaw", names(pml_dat))
+cl<-cl & !grepl("max_yaw", names(pml_dat))
+cl<-cl & !grepl("min_yaw", names(pml_dat))
+pml_dat<-pml_dat[sample(1:19622,1000),cl]
+#pml_dat<-pml_dat[,cl]
+pml_tst<-pml_tst[,cl]
+
+# Split training into a training and validation set
+set.seed(3456)
+inTrain <- createDataPartition(y=pml_dat$classe, p=0.6, list=FALSE)
+pml_trn <- pml_dat[inTrain,]
+pml_val <- pml_dat[-inTrain,]
+```
+## Exploratory Analysis
+Examine the distribution of error classes in the training dataset.
+```{r}
+cCol<-c("green", "red", "red", "red", "red")
+barplot(table(pml_trn$classe), col = cCol,)
+```
+Examples of each error classe and correct technique are well represented in the data set.
+
+## Model Selection: Algorithms and Parameters
+I considered the following three classifcation models: Random Forest, Boosting and Linear Discriminant Analysis. I fit each of these models to the training set with K-fold cross validation on 10 subsets. Cross validation supports measuring the variability of the model accuracy against other samples. 10 samples should provide a reasonable unbiased estimator without too much variance.
+```{r}
+library(caret)
+train_control <- trainControl(method="cv", number=10)
+modelFitRF  <- train(classe ~ ., method="rf", trControl=train_control, data=pml_trn, verbose = FALSE)
+modelFitRF
+modelFitGBM <- train(classe ~ ., method="gbm", trControl=train_control, data=pml_trn, verbose = FALSE)
+modelFitGBM
+modelFitLDA <- train(classe ~ ., method="lda", trControl=train_control, data=pml_trn, verbose = FALSE)
+modelFitLDA
+```
+The Random Forest model fits the training set best with an estimated forecast accuracy of 99%. The standard deviaton of this measure is 0.28%. The Boosting and Linear Discriminant Analysis models accuracy and standard deviation are (96%, 0.54%)  and (74%, 1.27%) respectively. The Random Forest model has the highest accuracy and lowest variance so I'll use this as the predicitive model.
+
+## Model Fit - Estimate Out of Sample Error
+Measure the accuracy of the random forest model against validation set for an estimate of out of sample error.
+```{r}
+confusionMatrix(pml_val$classe, predict(modelFitRF, pml_val))
+```
+The estimated accuracy of the model is 99.31% with a 95% confidence interval between 99.10% and 99.48%.
+
+## Significant Factors
+The top ten most significant facors in the fitted random forest model is listed below. Significance is measured by the impact including the variable in the model versus leaving it out.
+```{r}
+viRF <- varImp(modelFitRF)
+plot(viRF, top = 10)
+```
+
+## Predict values in the test set
+The following are the predicted error class for each of the 20 observations in the test dataset.
+```{r}
+predict(modelFitRF, pml_tst)
+```
+
+## References
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
