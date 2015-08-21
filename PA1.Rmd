@@ -14,7 +14,7 @@ The objective of this analysis is to develop a model that will identify errors i
 
 The model was fitted using the Weight Lifting Exercises dataset published by Velloso, Gellersen, Ugulino, and Fuks. After cleaning the data, I split the training set data into a training and validation set then tested several classification models. I chose the model that best fit the validation data. This turned out to be a Random Forest model. The model was then applied to the testing set of 20 observations to predict the error class.
 
-## Input - Read, Clean and Partition Weight Lifting Exercise Dataset
+## Input - Read, Clean and Partition Dataset
 Read training and testing data. Remove any columns not related to data from accelerometers on the belt, forearm, arm, and dumbell. Do not include subject identifier as we're trying to build a model to measure lift quality for any weightlifter. Remove any column with N/As or #DIV/0 in the training set. Also remove any columns identified as skewness, kurtosis or amplitude_yaw. These are summary data across windows and are only included in few select rows. The columns removed contain little data so they should not significantly affect model fit.
 
 Since we have a large training split it into a training and validation set so we can estimate the out of sample error. The split is 60% training and 40% validation. 
