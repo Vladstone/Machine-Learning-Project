@@ -21,7 +21,6 @@ Since we have a large training split it into a training and validation set so we
 ```{r readdata, cache=TRUE}
 # Read data
 library(caret)
-library(datasets)
 pml_dat<-read.csv("pml-training.csv")
 pml_tst<-read.csv("pml-testing.csv")
 
@@ -33,8 +32,8 @@ cl<-cl & !grepl("kurtosis", names(pml_dat))
 cl<-cl & !grepl("amplitude_yaw", names(pml_dat))
 cl<-cl & !grepl("max_yaw", names(pml_dat))
 cl<-cl & !grepl("min_yaw", names(pml_dat))
-pml_dat<-pml_dat[sample(1:19622,1000),cl]
-#pml_dat<-pml_dat[,cl]
+#pml_dat<-pml_dat[sample(1:19622,1000),cl]
+pml_dat<-pml_dat[,cl]
 pml_tst<-pml_tst[,cl]
 
 # Split training into a training and validation set
