@@ -15,7 +15,7 @@ The objective of this analysis is to develop a model that will identify errors i
 The model was fitted using the Weight Lifting Exercises dataset published by Velloso, Gellersen, Ugulino, and Fuks. After cleaning the data, I split the training set data into a training and validation set then tested several classification models. I chose the model that best fit the validation data. This turned out to be a Random Forest model. The model was then applied to the testing set of 20 observations to predict the error class.
 
 ## Input - Read, Clean and Partition Dataset
-Read training and testing data. Remove any columns not related to data from accelerometers on the belt, forearm, arm, and dumbell. Do not include subject identifier as we're trying to build a model to measure lift quality for any weightlifter. Remove any column with N/As or #DIV/0 in the training set. Also remove any columns identified as skewness, kurtosis or amplitude_yaw. These are summary data across windows and are only included in few select rows. The columns removed contain little data so they should not significantly affect model fit.
+Read the training and testing data. Remove any columns not related to data from accelerometers on the belt, forearm, arm, and dumbell. Do not include subject identifier as we're trying to build a model to measure lift quality for any weightlifter. Remove any column with N/As or #DIV/0 in the training set. Also remove any columns identified as skewness, kurtosis or amplitude_yaw. These are summary data across windows and are only included in a few select rows. The columns removed contain little data so they should not significantly affect model fit.
 
 Since we have a large training split it into a training and validation set so we can estimate the out of sample error. The split is 60% training and 40% validation. 
 ```{r readdata, cache=TRUE}
@@ -43,15 +43,14 @@ pml_trn <- pml_dat[inTrain,]
 pml_val <- pml_dat[-inTrain,]
 ```
 ## Exploratory Analysis
-Examine the distribution of error classes in the training dataset.
+Examine the distribution of error classes in the training dataset. Examples of each error classe and correct technique are well represented in the data set.
 ```{r}
 cCol<-c("green", "red", "red", "red", "red")
 barplot(table(pml_trn$classe), col = cCol,)
 ```
-Examples of each error classe and correct technique are well represented in the data set.
 
 ## Model Selection: Algorithms and Parameters
-I considered the following three classifcation models: Random Forest, Boosting and Linear Discriminant Analysis. I fit each of these models to the training set with K-fold cross validation on 10 subsets. Cross validation supports measuring the variability of the model accuracy against other samples. 10 samples should provide a reasonable unbiased estimator without too much variance.
+I considered the following three classifcation models: Random Forest, Boosting and Linear Discriminant Analysis, then fit each of these models to the training set with K-fold cross validation on 10 subsets. Cross validation supports measuring the variability of the model accuracy against other samples. 10 samples should provide a reasonable unbiased estimator without too much variance.
 ```{r}
 library(caret)
 train_control <- trainControl(method="cv", number=10)
@@ -72,14 +71,14 @@ confusionMatrix(pml_val$classe, predict(modelFitRF, pml_val))
 The estimated accuracy of the model is 99.31% with a 95% confidence interval between 99.10% and 99.48%.
 
 ## Significant Factors
-The top ten most significant facors in the fitted random forest model is listed below. Significance is measured by the impact including the variable in the model versus leaving it out.
+The top ten most significant facors in the fitted random forest model is listed below. Significance is measured by the impact of including the variable in the model versus leaving it out.
 ```{r}
 viRF <- varImp(modelFitRF)
 plot(viRF, top = 10)
 ```
 
-## Predict values in the test set
-The following are the predicted error class for each of the 20 observations in the test dataset.
+## Predict Test Set Error Class
+The following are the predicted error classes for each of the 20 observations in the test dataset.
 ```{r}
 predict(modelFitRF, pml_tst)
 ```
